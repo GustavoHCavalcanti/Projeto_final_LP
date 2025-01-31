@@ -1,6 +1,7 @@
 use serde::Deserialize; // Importa as ferramentas para deserializar dados de CSV para structs
 use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos csv
 use std::error::Error; // Para gerenciar erros de forma robusta
+use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)] // Supressão do aviso
@@ -27,10 +28,8 @@ struct LogEntry {
     pressão_do_freio: f64,
 }
 
-
 // Função para ler o arquivo CSV e retornar os dados como um vetor de LogEntry
 fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
-    // Cria o leitor de CSV configurado para usar cabeçalhos
     let mut rdr = ReaderBuilder::new()
         .has_headers(true) // Indica que o CSV tem cabeçalhos
         .from_path(file_path)?;
@@ -42,6 +41,21 @@ fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     }
 
     Ok(data) // Retorna o vetor com os dados lidos
+}
+
+// Função para gerar um gráfico de RPM ao longo do tempo
+fn gerar_grafico(data: &[LogEntry]) -> Result<(), Box<dyn Error>> {
+    let tempo: Vec<f64> = data.iter().map(|d| d.time).collect();
+    let rpm: Vec<u32> = data.iter().map(|d| d.rpm).collect();
+
+    let trace = Scatter::new(tempo, rpm).name("RPM ao longo do tempo");
+    let mut plot = Plot::new();
+    plot.add_trace(trace);
+
+    plot.write_html("grafico.html"); // Salva o gráfico em um arquivo HTML
+
+    println!("Gráfico gerado: grafico.html");
+    Ok(())
 }
 
 // Função principal que executa o programa
@@ -61,6 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Nenhum dado encontrado no arquivo.");
     }
 
-    // TODO: Aqui podemos adicionar processamento ou geração de gráficos
+    // Gera o gráfico interativo de RPM por tempo
+    gerar_grafico(&data)?;
+
     Ok(())
 }
