@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize}; // Adiciona Serialize para JSON
 use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos CSV
-use std::{error::Error, fs}; // Adiciona fs para manipulação de arquivos
+use std::{error::Error, fs, io}; // Adiciona fs e io para entrada do usuário
 use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
 #[derive(Debug, Deserialize, Serialize)]
-#[allow(dead_code)] // Supressão do aviso
+#[allow(dead_code)]
 struct LogEntry {
     #[serde(rename = "TIME")]
     time: f64,
@@ -48,18 +48,68 @@ fn read_json(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     Ok(data)
 }
 
-// Função para gerar um gráfico de RPM ao longo do tempo
-fn gerar_grafico(data: &[LogEntry]) -> Result<(), Box<dyn Error>> {
-    let tempo: Vec<f64> = data.iter().map(|d| d.time).collect();
-    let rpm: Vec<u32> = data.iter().map(|d| d.rpm).collect();
+// Função para exibir opções e capturar entrada do usuário
+fn escolher_variavel(mensagem: &str, opcoes: &[&str]) -> String {
+    loop {
+        println!("{}", mensagem);
+        for (i, &opcao) in opcoes.iter().enumerate() {
+            println!("{} - {}", i + 1, opcao);
+        }
 
-    let trace = Scatter::new(tempo, rpm).name("RPM ao longo do tempo");
+        let mut escolha = String::new();
+        io::stdin().read_line(&mut escolha).expect("Erro ao ler entrada");
+
+        if let Ok(indice) = escolha.trim().parse::<usize>() {
+            if indice > 0 && indice <= opcoes.len() {
+                return opcoes[indice - 1].to_string();
+            }
+        }
+
+        println!("Escolha inválida. Tente novamente.");
+    }
+}
+
+// Função para gerar gráfico baseado na escolha do usuário
+fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) -> Result<(), Box<dyn Error>> {
+    let tempo: Vec<f64> = data.iter().map(|d| d.time).collect();
+
+    let valores_x: Vec<f64> = match eixo_x {
+        "TIME" => tempo.clone(),
+        "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
+        "TPS" => data.iter().map(|d| d.tps).collect(),
+        "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
+        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
+        "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
+        "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
+        "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
+        "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
+        "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        _ => vec![],
+    };
+
+    let valores_y: Vec<f64> = match eixo_y {
+        "TIME" => tempo.clone(),
+        "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
+        "TPS" => data.iter().map(|d| d.tps).collect(),
+        "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
+        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
+        "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
+        "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
+        "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
+        "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
+        "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        _ => vec![],
+    };
+
+    let trace = Scatter::new(valores_x, valores_y).name(format!("{} vs {}", eixo_x, eixo_y));
     let mut plot = Plot::new();
     plot.add_trace(trace);
 
-    plot.write_html("grafico.html"); // Salva o gráfico em um arquivo HTML
+    fs::create_dir_all("graficos")?;
+    let caminho = format!("graficos/{}_vs_{}.html", eixo_x.replace(" ", "_"), eixo_y.replace(" ", "_"));
+    plot.write_html(&caminho);
 
-    println!("Gráfico gerado: grafico.html");
+    println!("Gráfico gerado: {}", caminho);
     Ok(())
 }
 
@@ -78,23 +128,27 @@ fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
 
 // Função principal que executa o programa
 fn main() -> Result<(), Box<dyn Error>> {
-    let file_path = "dados.csv/dados1teste.json"; // Modifique para testar com um arquivo JSON
+    let file_path = "dados/dados1.csv"; // Modifique para testar com um arquivo JSON
 
     // Detecta o tipo do arquivo e lê os dados
     let data = carregar_dados(file_path)?;
 
-    // Exibe o número total de linhas lidas
     println!("Número total de linhas lidas: {}", data.len());
-
-    // Exibe a primeira entrada, se existir
     if let Some(first_entry) = data.get(0) {
         println!("Primeira entrada: {:?}", first_entry);
-    } else {
-        println!("Nenhum dado encontrado no arquivo.");
     }
 
-    // Gera o gráfico interativo de RPM por tempo
-    gerar_grafico(&data)?;
+    // Permitir ao usuário escolher as variáveis do eixo X e Y
+    let variaveis = [
+        "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
+        "Temp. do Motor", "Temp. do Ar", "Pressão de Óleo", "Tensão da Bateria", "Pressão do Freio"
+    ];
+
+    let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
+    let eixo_y = escolher_variavel("Escolha a variável do eixo Y:", &variaveis);
+
+    // Gerar o gráfico personalizado
+    gerar_grafico_personalizado(&data, &eixo_x, &eixo_y)?;
 
     Ok(())
 }
