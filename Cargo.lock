@@ -9,6 +9,7 @@ dependencies = [
  "csv",
  "plotly",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

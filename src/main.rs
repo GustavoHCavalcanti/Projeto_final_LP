@@ -1,9 +1,9 @@
-use serde::Deserialize; // Importa as ferramentas para deserializar dados de CSV para structs
-use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos csv
-use std::error::Error; // Para gerenciar erros de forma robusta
+use serde::{Deserialize, Serialize}; // Adiciona Serialize para JSON
+use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos CSV
+use std::{error::Error, fs}; // Adiciona fs para manipulação de arquivos
 use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)] // Supressão do aviso
 struct LogEntry {
     #[serde(rename = "TIME")]
@@ -28,19 +28,24 @@ struct LogEntry {
     pressão_do_freio: f64,
 }
 
-// Função para ler o arquivo CSV e retornar os dados como um vetor de LogEntry
+// Função para ler CSV e retornar um vetor de LogEntry
 fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true) // Indica que o CSV tem cabeçalhos
-        .from_path(file_path)?;
+    let mut rdr = ReaderBuilder::new().has_headers(true).from_path(file_path)?;
 
-    let mut data = Vec::new(); // Vetor para armazenar os dados lidos
+    let mut data = Vec::new();
     for result in rdr.deserialize() {
-        let record: LogEntry = result?; // Converte cada linha do CSV para LogEntry
-        data.push(record); // Adiciona ao vetor
+        let record: LogEntry = result?;
+        data.push(record);
     }
 
-    Ok(data) // Retorna o vetor com os dados lidos
+    Ok(data)
+}
+
+// Função para ler JSON e retornar um vetor de LogEntry
+fn read_json(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
+    let file_content = fs::read_to_string(file_path)?; // Lê o arquivo JSON como string
+    let data: Vec<LogEntry> = serde_json::from_str(&file_content)?; // Converte JSON para struct
+    Ok(data)
 }
 
 // Função para gerar um gráfico de RPM ao longo do tempo
@@ -58,12 +63,25 @@ fn gerar_grafico(data: &[LogEntry]) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+// Função para detectar a extensão do arquivo e chamar a leitura correta
+fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
+    if file_path.ends_with(".csv") {
+        println!("Detectado arquivo CSV.");
+        read_csv(file_path)
+    } else if file_path.ends_with(".json") {
+        println!("Detectado arquivo JSON.");
+        read_json(file_path)
+    } else {
+        Err("Formato de arquivo não suportado. Use .csv ou .json".into())
+    }
+}
+
 // Função principal que executa o programa
 fn main() -> Result<(), Box<dyn Error>> {
-    let file_path = "dados.csv/dados1.csv"; // Defina o caminho para o arquivo CSV
+    let file_path = "dados.csv/dados1teste.json"; // Modifique para testar com um arquivo JSON
 
-    // Tenta ler os dados do arquivo CSV
-    let data = read_csv(file_path)?;
+    // Detecta o tipo do arquivo e lê os dados
+    let data = carregar_dados(file_path)?;
 
     // Exibe o número total de linhas lidas
     println!("Número total de linhas lidas: {}", data.len());
