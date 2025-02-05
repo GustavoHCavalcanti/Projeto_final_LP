@@ -1,1 +1,1 @@
-/home/gustavo/Plotacao-graficos/target/debug/Plotacao-graficos: /home/gustavo/Plotacao-graficos/src/main.rs
+F:\Codigos\Projeto_final_LP\target\debug\Plotacao-graficos.exe: F:\Codigos\Projeto_final_LP\src\front.rs F:\Codigos\Projeto_final_LP\src\main.rs
