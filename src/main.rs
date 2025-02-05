@@ -3,6 +3,8 @@ use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos CSV
 use std::{error::Error, fs, io}; // Adiciona fs e io para entrada do usuário
 use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
+mod front;
+
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
 struct LogEntry {
@@ -127,28 +129,35 @@ fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
 }
 
 // Função principal que executa o programa
-fn main() -> Result<(), Box<dyn Error>> {
-    let file_path = "dados/dados1.csv"; // Modifique para testar com um arquivo JSON
 
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    front::start_frontend().await
+}
+
+
+//fn main() -> Result<(), Box<dyn Error>> {
+//    let file_path = "dados/dados1.csv"; // Modifique para testar com um arquivo JSON
+//
     // Detecta o tipo do arquivo e lê os dados
-    let data = carregar_dados(file_path)?;
-
-    println!("Número total de linhas lidas: {}", data.len());
-    if let Some(first_entry) = data.get(0) {
-        println!("Primeira entrada: {:?}", first_entry);
-    }
-
+//    let data = carregar_dados(file_path)?;
+//
+//    println!("Número total de linhas lidas: {}", data.len());
+//    if let Some(first_entry) = data.get(0) {
+//        println!("Primeira entrada: {:?}", first_entry);
+//    }
+//
     // Permitir ao usuário escolher as variáveis do eixo X e Y
-    let variaveis = [
-        "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
-        "Temp. do Motor", "Temp. do Ar", "Pressão de Óleo", "Tensão da Bateria", "Pressão do Freio"
-    ];
-
-    let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
-    let eixo_y = escolher_variavel("Escolha a variável do eixo Y:", &variaveis);
+//    let variaveis = [
+//        "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
+//        "Temp. do Motor", "Temp. do Ar", "Pressão de Óleo", "Tensão da Bateria", "Pressão do Freio"
+//    ];
+//
+//    let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
+//    let eixo_y = escolher_variavel("Escolha a variável do eixo Y:", &variaveis);
 
     // Gerar o gráfico personalizado
-    gerar_grafico_personalizado(&data, &eixo_x, &eixo_y)?;
+//    gerar_grafico_personalizado(&data, &eixo_x, &eixo_y)?;
 
-    Ok(())
-}
+//    Ok(())
+//}
