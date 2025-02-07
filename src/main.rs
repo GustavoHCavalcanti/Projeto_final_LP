@@ -7,27 +7,45 @@ mod front;
 
 #[derive(Debug, Deserialize, Serialize)]
 #[allow(dead_code)]
-struct LogEntry {
+pub struct LogEntry {
     #[serde(rename = "TIME")]
-    time: f64,
+    pub time: f64,
     #[serde(rename = "RPM")]
-    rpm: u32,
+    pub rpm: u32,
     #[serde(rename = "TPS")]
-    tps: f64,
+    pub tps: f64,
     #[serde(rename = "Posição_do_acelerador")]
-    posição_do_acelerador: f64,
+    pub posição_do_acelerador: f64,
     #[serde(rename = "Ponto_de_ignição")]
-    ponto_de_ignição: f64,
+    pub ponto_de_ignição: f64,
     #[serde(rename = "Temp._do_motor")]
-    temp_do_motor: f64,
+    pub temp_do_motor: f64,
     #[serde(rename = "Temp._do_Ar")]
-    temp_do_ar: f64,
+    pub temp_do_ar: f64,
     #[serde(rename = "Pressão_de_Óleo")]
-    pressão_de_óleo: f64,
+    pub pressão_de_óleo: f64,
     #[serde(rename = "Tensão_da_Bateria")]
-    tensão_da_bateria: f64,
+    pub tensão_da_bateria: f64,
     #[serde(rename = "Pressão_do_freio")]
-    pressão_do_freio: f64,
+    pub pressão_do_freio: f64,
+}
+
+
+// Função para ler os dados do arquivo 'dadosmemoria.json'
+pub fn ler_dados_memoria() -> Result<Vec<LogEntry>, Box<dyn Error>> {
+    let file_path = "dados/dadosmemoria.json";
+    // Se o arquivo não existir ou estiver vazio, retorna um vetor vazio
+    let contents = fs::read_to_string(file_path).unwrap_or("[]".to_string());
+    let dados: Vec<LogEntry> = serde_json::from_str(&contents)?;
+    Ok(dados)
+}
+
+// Função para salvar os dados atualizados no arquivo 'dadosmemoria.json'
+pub fn salvar_dados_memoria(dados: &Vec<LogEntry>) -> Result<(), Box<dyn Error>> {
+    let file_path = "dados/dadosmemoria.json";
+    let conteudo = serde_json::to_string_pretty(dados)?;
+    fs::write(file_path, conteudo)?;
+    Ok(())
 }
 
 // Função para ler CSV e retornar um vetor de LogEntry
