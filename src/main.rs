@@ -3,7 +3,7 @@ use csv::ReaderBuilder; // Biblioteca para trabalhar com arquivos CSV
 use std::{error::Error, fs, io}; // Adiciona fs e io para entrada do usuário
 use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[allow(dead_code)]
 struct LogEntry {
     #[serde(rename = "TIME")]
@@ -126,6 +126,45 @@ fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     }
 }
 
+fn filtrar_dados_por_tempo(data: &[LogEntry], time_start: f64, time_end: f64) -> Vec<LogEntry> {
+    data.iter()
+        .filter(|entry| entry.time >= time_start && entry.time <= time_end)
+        .cloned()
+        .collect()
+}
+
+fn solicitar_intervalo_de_tempo() -> Option<(f64, f64)> {
+    println!("Você deseja filtrar os dados por intervalo de tempo? (s/n)");
+    let mut escolha = String::new();
+    io::stdin().read_line(&mut escolha).expect("Erro ao ler entrada");
+
+    if escolha.trim().eq_ignore_ascii_case("s") {
+        loop {
+            println!("Digite o intervalo de tempo (TIME) para filtrar os dados:");
+
+            let mut time_start = String::new();
+            println!("Tempo inicial (TIME_START):");
+            io::stdin().read_line(&mut time_start).expect("Erro ao ler o tempo inicial");
+
+            let mut time_end = String::new();
+            println!("Tempo final (TIME_END):");
+            io::stdin().read_line(&mut time_end).expect("Erro ao ler o tempo final");
+
+            if let (Ok(start), Ok(end)) = (time_start.trim().parse::<f64>(), time_end.trim().parse::<f64>()) {
+                if start < end {
+                    return Some((start, end));
+                } else {
+                    println!("O tempo inicial deve ser menor que o tempo final. Tente novamente.");
+                }
+            } else {
+                println!("Entrada inválida. Digite números válidos para o tempo inicial e final.");
+            }
+        }
+    } else {
+        None // Retorna None se o usuário escolher não filtrar
+    }
+}
+
 // Função principal que executa o programa
 fn main() -> Result<(), Box<dyn Error>> {
     let file_path = "dados/dados1.csv"; // Modifique para testar com um arquivo JSON
@@ -138,6 +177,18 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("Primeira entrada: {:?}", first_entry);
     }
 
+    // Solicitar se o usuário deseja filtrar por tempo
+    let dados_filtrados = if let Some((time_start, time_end)) = solicitar_intervalo_de_tempo() {
+        filtrar_dados_por_tempo(&data, time_start, time_end)
+    } else {
+        data.clone() // Usa todos os dados caso o usuário não queira filtrar
+    };
+
+    if dados_filtrados.is_empty() {
+        println!("Nenhum dado encontrado no intervalo de tempo especificado. Encerrando o programa.");
+        return Ok(());
+    }
+
     // Permitir ao usuário escolher as variáveis do eixo X e Y
     let variaveis = [
         "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
@@ -147,8 +198,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
     let eixo_y = escolher_variavel("Escolha a variável do eixo Y:", &variaveis);
 
-    // Gerar o gráfico personalizado
-    gerar_grafico_personalizado(&data, &eixo_x, &eixo_y)?;
+    // Gerar o gráfico personalizado com os dados filtrados ou todos os dados
+    gerar_grafico_personalizado(&dados_filtrados, &eixo_x, &eixo_y)?;
 
     Ok(())
 }
