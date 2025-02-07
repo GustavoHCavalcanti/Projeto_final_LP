@@ -3,28 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telemetria</title>
-
+  <title>Telemetria - Múltiplos Gráficos</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      padding: 20px;
+      text-align: center;
     }
-    .graph-container {
+    #container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .graph {
       width: 100%;
-      max-width: 800px;
-      margin-top: 20px;
+      height: 400px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-  <h1>Telemetria</h1>
-  <p>Gráficos em tempo real</p>
-  <div class="graph-container" id="graph-container"></div>
+  <h1>Telemetria - Múltiplos Gráficos (Tempo Real)</h1>
+  <button onclick="limparDados()">Limpar Dados</button>
+  <div id="container">
+    <div id="graph1" class="graph"></div>
+    <div id="graph2" class="graph"></div>
+    <div id="graph3" class="graph"></div>
+    <div id="graph4" class="graph"></div>
+    <div id="graph5" class="graph"></div>
+    <div id="graph6" class="graph"></div>
+  </div>
 
+  <script>
+    // Função para inicializar um gráfico vazio
+    function initGraph(graphId, title, yAxisLabel) {
+      Plotly.newPlot(graphId, [{
+        x: [],
+        y: [],
+        type: 'scatter',
+        mode: 'lines+markers',
+        marker: { color: 'blue' }
+      }], {
+        title: title,
+        xaxis: { title: 'Tempo (s)' },
+        yaxis: { title: yAxisLabel }
+      });
+    }
+
+    // Inicializa os 6 gráficos com nomes diferentes
+    initGraph('graph1', 'RPM vs Tempo', 'RPM');
+    initGraph('graph2', 'Velocidade vs Tempo', 'Velocidade (km/h)');
+    initGraph('graph3', 'Temperatura do Motor vs Tempo', 'Temp (°C)');
+    initGraph('graph4', 'Pressão do Óleo vs Tempo', 'Pressão (bar)');
+    initGraph('graph5', 'Voltagem da Bateria vs Tempo', 'Voltagem (V)');
+    initGraph('graph6', 'Consumo de Combustível vs Tempo', 'Litros/h');
+
+    // Atualiza os gráficos com os dados do backend
+    function updateCharts() {
+      fetch('/dados')
+        .then(response => response.json())
+        .then(data => {
+          const tempo = data.map(item => item.TIME);
+          const rpm = data.map(item => item.RPM);
+          const velocidade = data.map(item => item.VELOCIDADE);
+          const temperatura = data.map(item => item.TEMP_MOTOR);
+          const pressao = data.map(item => item.PRESSAO_OLEO);
+          const voltagem = data.map(item => item.VOLTAGEM_BATERIA);
+          const combustivel = data.map(item => item.CONSUMO_COMBUSTIVEL);
+
+          // Atualiza cada gráfico com os dados específicos
+          Plotly.react('graph1', [{ x: tempo, y: rpm, type: 'scatter', mode: 'lines+markers', marker: { color: 'blue' }}]);
+          Plotly.react('graph2', [{ x: tempo, y: velocidade, type: 'scatter', mode: 'lines+markers', marker: { color: 'red' }}]);
+          Plotly.react('graph3', [{ x: tempo, y: temperatura, type: 'scatter', mode: 'lines+markers', marker: { color: 'green' }}]);
+          Plotly.react('graph4', [{ x: tempo, y: pressao, type: 'scatter', mode: 'lines+markers', marker: { color: 'purple' }}]);
+          Plotly.react('graph5', [{ x: tempo, y: voltagem, type: 'scatter', mode: 'lines+markers', marker: { color: 'orange' }}]);
+          Plotly.react('graph6', [{ x: tempo, y: combustivel, type: 'scatter', mode: 'lines+markers', marker: { color: 'brown' }}]);
+        })
+        .catch(error => console.error('Erro ao buscar dados:', error));
+    }
+
+    // Função para limpar os dados do arquivo no servidor
+    function limparDados() {
+      fetch('/dados', { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          alert('Dados apagados!');
+        })
+        .catch(error => console.error('Erro ao limpar os dados:', error));
+    }
+
+    // Atualiza os gráficos a cada 1 segundo
+    setInterval(updateCharts, 1000);
+  </script>
 </body>
 </html>
