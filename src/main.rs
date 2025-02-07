@@ -14,18 +14,24 @@ struct LogEntry {
     tps: f64,
     #[serde(rename = "Posição_do_acelerador")]
     posição_do_acelerador: f64,
-    #[serde(rename = "Ponto_de_ignição")]
-    ponto_de_ignição: f64,
+    #[serde(rename = "Marcha")]
+    marcha: u32,
+    #[serde(rename = "Largada_validada")]
+    largada_validada: String,
+    #[serde(rename = "Fluxo_total_de_combustível")]
+    fluxo_total_de_combustivel: f64,
     #[serde(rename = "Temp._do_motor")]
     temp_do_motor: f64,
-    #[serde(rename = "Temp._do_Ar")]
-    temp_do_ar: f64,
     #[serde(rename = "Pressão_de_Óleo")]
     pressão_de_óleo: f64,
+    #[serde(rename = "Temp._do_Ar")]
+    temp_do_ar: f64,
     #[serde(rename = "Tensão_da_Bateria")]
     tensão_da_bateria: f64,
     #[serde(rename = "Pressão_do_freio")]
     pressão_do_freio: f64,
+    #[serde(rename = "Tanque")]
+    tanque: f64,
 }
 
 // Função para ler CSV e retornar um vetor de LogEntry
@@ -71,33 +77,35 @@ fn escolher_variavel(mensagem: &str, opcoes: &[&str]) -> String {
 
 // Função para gerar gráfico baseado na escolha do usuário
 fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) -> Result<(), Box<dyn Error>> {
-    let tempo: Vec<f64> = data.iter().map(|d| d.time).collect();
-
     let valores_x: Vec<f64> = match eixo_x {
-        "TIME" => tempo.clone(),
+        "TIME" => data.iter().map(|d| d.time).collect(),
         "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
         "TPS" => data.iter().map(|d| d.tps).collect(),
         "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
-        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
+        "Marcha" => data.iter().map(|d| d.marcha as f64).collect(),
+        "Fluxo Total de Combustível" => data.iter().map(|d| d.fluxo_total_de_combustivel).collect(),
         "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
         "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
         "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
         "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
         "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Tanque" => data.iter().map(|d| d.tanque).collect(),
         _ => vec![],
     };
 
     let valores_y: Vec<f64> = match eixo_y {
-        "TIME" => tempo.clone(),
+        "TIME" => data.iter().map(|d| d.time).collect(),
         "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
         "TPS" => data.iter().map(|d| d.tps).collect(),
         "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
-        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
+        "Marcha" => data.iter().map(|d| d.marcha as f64).collect(),
+        "Fluxo Total de Combustível" => data.iter().map(|d| d.fluxo_total_de_combustivel).collect(),
         "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
         "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
         "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
         "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
         "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Tanque" => data.iter().map(|d| d.tanque).collect(),
         _ => vec![],
     };
 
@@ -106,7 +114,11 @@ fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) ->
     plot.add_trace(trace);
 
     fs::create_dir_all("graficos")?;
-    let caminho = format!("graficos/{}_vs_{}.html", eixo_x.replace(" ", "_"), eixo_y.replace(" ", "_"));
+    let caminho = format!(
+        "graficos/{}_vs_{}.html", 
+        eixo_x.replace(" ", "_"), 
+        eixo_y.replace(" ", "_")
+    );
     plot.write_html(&caminho);
 
     println!("Gráfico gerado: {}", caminho);
@@ -178,10 +190,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Solicitar se o usuário deseja filtrar por tempo
-    let dados_filtrados = if let Some((time_start, time_end)) = solicitar_intervalo_de_tempo() {
+    let dados_filtrados: Vec<LogEntry> = if let Some((time_start, time_end)) = solicitar_intervalo_de_tempo() {
         filtrar_dados_por_tempo(&data, time_start, time_end)
     } else {
-        data.clone() // Usa todos os dados caso o usuário não queira filtrar
+        data.to_vec() // Usa todos os dados caso o usuário não queira filtrar
     };
 
     if dados_filtrados.is_empty() {
@@ -191,8 +203,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Permitir ao usuário escolher as variáveis do eixo X e Y
     let variaveis = [
-        "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
-        "Temp. do Motor", "Temp. do Ar", "Pressão de Óleo", "Tensão da Bateria", "Pressão do Freio"
+        "TIME", "RPM", "TPS", "Posição do Acelerador", "Marcha", "Largada Validada",
+        "Fluxo Total de Combustível", "Temp. do Motor", "Pressão de Óleo",
+        "Temp. do Ar", "Tensão da Bateria", "Pressão do Freio", "Tanque"
     ];
 
     let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
