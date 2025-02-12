@@ -145,7 +145,7 @@ pub async fn start_frontend() -> io::Result<()> {
                     .route(web::delete().to(limpar_dados))
             )
     })
-    .bind("0.0.0.0:8080")?
+    .bind(format!("0.0.0.0:{}", std::env::var("PORT").unwrap_or("8080".to_string())))?
     .run()
     .await
 }
