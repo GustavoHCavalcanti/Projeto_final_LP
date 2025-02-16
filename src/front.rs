@@ -222,6 +222,12 @@ pub async fn start_frontend() -> io::Result<()> {
             .service(gerar_grafico)
             .service(Files::new("/graficos", "graficos").show_files_listing())
             .service(reset_grafico)
+            .service(
+                web::resource("/dados")
+                    .route(web::get().to(get_dados))
+                    .route(web::post().to(post_dados))
+                    .route(web::delete().to(limpar_dados))
+            )
     })
     .bind("0.0.0.0:8080")?
     .run()
