@@ -5,7 +5,7 @@ use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
 mod front;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 #[allow(dead_code)]
 pub struct LogEntry {
     #[serde(rename = "TIME")]

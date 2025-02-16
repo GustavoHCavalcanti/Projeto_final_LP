@@ -2,6 +2,7 @@ use actix_web::{web, App, HttpServer, Responder, HttpResponse, post};
 use actix_files::Files;
 use handlebars::Handlebars;
 use serde::{Serialize, Deserialize};
+use serde::Deserializer;
 use std::env;
 use std::path::Path;
 use std::io::{self, Read, Write};
@@ -119,6 +120,7 @@ async fn escolher_variaveis(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     }
 }
 
+// Processa a requisição e gera o gráfico
 #[post("/gerar_grafico")]
 async fn gerar_grafico(
     form: web::Form<GraficoRequest>,
@@ -130,24 +132,35 @@ async fn gerar_grafico(
         Err(_) => return HttpResponse::InternalServerError().body("Erro ao carregar os dados."),
     };
 
-    let dados_filtrados: Vec<LogEntry> = data.into_iter()
-        .filter(|entry| {
-            form.time_start.map_or(true, |start| entry.time >= start) &&
-            form.time_end.map_or(true, |end| entry.time <= end)
-        })
+    // Verifica se os valores de tempo são válidos ou vazios
+    let time_start = form.time_start.unwrap_or_else(|| f64::MIN);
+    let time_end = form.time_end.unwrap_or_else(|| f64::MAX);
+
+    // Filtra os dados pelo tempo apenas se o usuário inseriu valores válidos
+    let dados_filtrados: Vec<LogEntry> = data
+        .into_iter()
+        .filter(|entry| entry.time >= time_start && entry.time <= time_end)
         .collect();
 
+    // Verifica se há dados disponíveis após o filtro
+    if dados_filtrados.is_empty() {
+        return HttpResponse::BadRequest().body("Nenhum dado encontrado para o intervalo de tempo fornecido.");
+    }
+
+    // Gera o gráfico
     if let Err(e) = gerar_grafico_personalizado(&dados_filtrados, &form.eixo_x, &form.eixo_y) {
         eprintln!("Erro ao gerar gráfico: {}", e);
         return HttpResponse::InternalServerError().body("Erro ao gerar gráfico.");
     }
 
+    // URL do gráfico gerado
     let url = format!("/graficos/{}_vs_{}.html", form.eixo_x.replace(" ", "_"), form.eixo_y.replace(" ", "_"));
 
+    // Renderiza a página com o gráfico gerado
     let context = EscolhaVariaveis {
         variaveis: vec![
-            "TIME", "RPM", "TPS", "Posição_do_acelerador", "Marcha",
-            "Largada_validada", "Fluxo_total_de_combustível", "Temp._do_motor",
+            "TIME", "RPM", "TPS", "Posição_do_acelerador", "Marcha", 
+            "Largada_validada", "Fluxo_total_de_combustível", "Temp._do_motor", 
             "Pressão_de_Óleo", "Temp._do_Ar", "Tensão_da_Bateria", "Pressão_do_freio", "Tanque"
         ],
         grafico_url: Some(url),
@@ -161,6 +174,7 @@ async fn gerar_grafico(
         }
     }
 }
+
 
 #[post("/reset")]
 async fn reset_grafico(hb: web::Data<Handlebars<'_>>) -> impl Responder {
