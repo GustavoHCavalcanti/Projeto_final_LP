@@ -16,18 +16,24 @@ pub struct LogEntry {
     pub tps: f64,
     #[serde(rename = "Posição_do_acelerador")]
     pub posição_do_acelerador: f64,
-    #[serde(rename = "Ponto_de_ignição")]
-    pub ponto_de_ignição: f64,
+    #[serde(rename = "Marcha")]
+    pub marcha: u32,
+    #[serde(rename = "Largada_validada")]
+    pub largada_validada: String,
+    #[serde(rename = "Fluxo_total_de_combustível")]
+    pub fluxo_total_de_combustivel: f64,
     #[serde(rename = "Temp._do_motor")]
     pub temp_do_motor: f64,
-    #[serde(rename = "Temp._do_Ar")]
-    pub temp_do_ar: f64,
     #[serde(rename = "Pressão_de_Óleo")]
     pub pressão_de_óleo: f64,
+    #[serde(rename = "Temp._do_Ar")]
+    pub temp_do_ar: f64,
     #[serde(rename = "Tensão_da_Bateria")]
     pub tensão_da_bateria: f64,
     #[serde(rename = "Pressão_do_freio")]
     pub pressão_do_freio: f64,
+    #[serde(rename = "Tanque")]
+    pub tanque: f64,
 }
 
 
@@ -55,6 +61,7 @@ fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     let mut data = Vec::new();
     for result in rdr.deserialize() {
         let record: LogEntry = result?;
+        println!("Registro lido do CSV: {:?}", record);
         data.push(record);
     }
 
@@ -91,35 +98,41 @@ fn escolher_variavel(mensagem: &str, opcoes: &[&str]) -> String {
 
 // Função para gerar gráfico baseado na escolha do usuário
 fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) -> Result<(), Box<dyn Error>> {
-    let tempo: Vec<f64> = data.iter().map(|d| d.time).collect();
-
     let valores_x: Vec<f64> = match eixo_x {
-        "TIME" => tempo.clone(),
+        "TIME" => data.iter().map(|d| d.time).collect(),
         "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
         "TPS" => data.iter().map(|d| d.tps).collect(),
-        "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
-        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
-        "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
-        "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
-        "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
-        "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
-        "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Posição_do_acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
+        "Marcha" => data.iter().map(|d| d.marcha as f64).collect(),
+        "Fluxo_total_de_combustível" => data.iter().map(|d| d.fluxo_total_de_combustivel).collect(),
+        "Temp._do_motor" => data.iter().map(|d| d.temp_do_motor).collect(),
+        "Pressão_de_Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
+        "Temp._do_Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
+        "Tensão_da_Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
+        "Pressão_do_freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Tanque" => data.iter().map(|d| d.tanque).collect(),
         _ => vec![],
     };
 
     let valores_y: Vec<f64> = match eixo_y {
-        "TIME" => tempo.clone(),
+        "TIME" => data.iter().map(|d| d.time).collect(),
         "RPM" => data.iter().map(|d| d.rpm as f64).collect(),
         "TPS" => data.iter().map(|d| d.tps).collect(),
-        "Posição do Acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
-        "Ponto de Ignição" => data.iter().map(|d| d.ponto_de_ignição).collect(),
-        "Temp. do Motor" => data.iter().map(|d| d.temp_do_motor).collect(),
-        "Temp. do Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
-        "Pressão de Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
-        "Tensão da Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
-        "Pressão do Freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Posição_do_acelerador" => data.iter().map(|d| d.posição_do_acelerador).collect(),
+        "Marcha" => data.iter().map(|d| d.marcha as f64).collect(),
+        "Fluxo_total_de_combustível" => data.iter().map(|d| d.fluxo_total_de_combustivel).collect(),
+        "Temp._do_motor" => data.iter().map(|d| d.temp_do_motor).collect(),
+        "Pressão_de_Óleo" => data.iter().map(|d| d.pressão_de_óleo).collect(),
+        "Temp._do_Ar" => data.iter().map(|d| d.temp_do_ar).collect(),
+        "Tensão_da_Bateria" => data.iter().map(|d| d.tensão_da_bateria).collect(),
+        "Pressão_do_freio" => data.iter().map(|d| d.pressão_do_freio).collect(),
+        "Tanque" => data.iter().map(|d| d.tanque).collect(),
         _ => vec![],
     };
+
+    // 🔴 LOG DE DEPURAÇÃO: Verificando os valores capturados
+    println!("Valores X ({}) -> {:?}", eixo_x, valores_x);
+    println!("Valores Y ({}) -> {:?}", eixo_y, valores_y);
 
     let trace = Scatter::new(valores_x, valores_y).name(format!("{} vs {}", eixo_x, eixo_y));
     let mut plot = Plot::new();
@@ -132,6 +145,7 @@ fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) ->
     println!("Gráfico gerado: {}", caminho);
     Ok(())
 }
+
 
 // Função para detectar a extensão do arquivo e chamar a leitura correta
 fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
