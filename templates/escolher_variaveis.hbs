@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escolher Variáveis</title>
+</head>
+<body>
+    <h1>Escolha as Variáveis do Gráfico</h1>
+
+    <form action="/gerar_grafico" method="post">
+        <label for="eixo_x">Eixo X:</label>
+        <select id="eixo_x" name="eixo_x">
+            {{#each variaveis}}
+                <option value="{{this}}">{{this}}</option>
+            {{/each}}
+        </select>
+
+        <label for="eixo_y">Eixo Y:</label>
+        <select id="eixo_y" name="eixo_y">
+            {{#each variaveis}}
+                <option value="{{this}}">{{this}}</option>
+            {{/each}}
+        </select>
+
+        <br><br>
+
+        <label for="time_start">Tempo Inicial:</label>
+        <input type="number" id="time_start" name="time_start" step="0.01">
+
+        <label for="time_end">Tempo Final:</label>
+        <input type="number" id="time_end" name="time_end" step="0.01">
+
+        <br><br>
+
+        <button type="submit">Gerar Gráfico</button>
+    </form>
+    <form action="/reset" method="post">
+        <button type="submit">Resetar Gráfico</button>
+    </form>
+
+    {{#if grafico_url}}
+        <h2>Resultado:</h2>
+        <iframe src="{{grafico_url}}" width="800" height="600"></iframe>
+    {{/if}}
+</body>
+</html>
