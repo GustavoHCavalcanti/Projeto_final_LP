@@ -10,13 +10,20 @@ use serde_json::{json, Value};
 use std::fs::{self, OpenOptions};
 use crate::{LogEntry, ler_dados_memoria, salvar_dados_memoria, carregar_dados, gerar_grafico_personalizado};
 
+/// Estrutura de dados para representar informações de login.
 #[derive(Serialize)]
 struct LoginData {}
 
+/// Estrutura de dados para representar informações de telemetria.
 #[derive(Serialize)]
 struct TelemetryData {}
 
-// Endpoint para retornar os dados
+/// Endpoint para retornar os dados salvos na memória.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com os dados em formato JSON se a leitura for bem-sucedida.
+/// - `HttpResponse::InternalServerError` com uma mensagem de erro se ocorrer um problema.
 async fn get_dados() -> impl Responder {
     match ler_dados_memoria() {
         Ok(dados) => HttpResponse::Ok().json(dados),
@@ -24,6 +31,16 @@ async fn get_dados() -> impl Responder {
     }
 }
 
+/// Endpoint para renderizar a página de login.
+///
+/// # Parâmetros
+///
+/// - `hb`: Dados do template Handlebars.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com o corpo da página renderizada.
+/// - `HttpResponse::InternalServerError` se ocorrer um erro ao renderizar o template.
 async fn login_page(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let data = LoginData {};
     match hb.render("login", &data) {
@@ -35,6 +52,16 @@ async fn login_page(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     }
 }
 
+/// Endpoint para renderizar a página de telemetria.
+///
+/// # Parâmetros
+///
+/// - `hb`: Dados do template Handlebars.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com o corpo da página renderizada.
+/// - `HttpResponse::InternalServerError` se ocorrer um erro ao renderizar o template.
 async fn telemetry_page(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let data = TelemetryData {};
     match hb.render("telemetry", &data) {
@@ -46,6 +73,15 @@ async fn telemetry_page(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     }
 }
 
+/// Endpoint para salvar dados enviados via POST.
+///
+/// # Parâmetros
+///
+/// - `body`: Dados JSON enviados no corpo da requisição.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com uma mensagem de sucesso.
 async fn post_dados(body: web::Json<Value>) -> impl Responder {
     let file_path = format!("{}/dados/dadosmemoria.json", env::current_dir().unwrap().display());
 
@@ -73,6 +109,11 @@ async fn post_dados(body: web::Json<Value>) -> impl Responder {
     HttpResponse::Ok().json("Dados salvos com sucesso!")
 }
 
+/// Endpoint para limpar todos os dados salvos.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com uma mensagem de sucesso.
 async fn limpar_dados() -> impl Responder {
     let file_path = format!("{}/dados/dadosmemoria.json", env::current_dir().unwrap().display());
 
@@ -87,12 +128,14 @@ async fn limpar_dados() -> impl Responder {
 // ** NOVA FUNCIONALIDADE: SELEÇÃO DE VARIÁVEIS E GERAÇÃO DE GRÁFICO **
 // ===================================
 
+/// Estrutura de dados para representar a escolha de variáveis e a URL do gráfico gerado.
 #[derive(Serialize)]
 struct EscolhaVariaveis {
     variaveis: Vec<&'static str>,
     grafico_url: Option<String>,
 }
 
+/// Estrutura de dados para representar a requisição de geração de gráfico.
 #[derive(Deserialize)]
 struct GraficoRequest {
     eixo_x: String,
@@ -101,6 +144,16 @@ struct GraficoRequest {
     time_end: Option<f64>,
 }
 
+/// Endpoint para renderizar a página de escolha de variáveis.
+///
+/// # Parâmetros
+///
+/// - `hb`: Dados do template Handlebars.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com o corpo da página renderizada.
+/// - `HttpResponse::InternalServerError` se ocorrer um erro ao renderizar o template.
 async fn escolher_variaveis(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let context = EscolhaVariaveis {
         variaveis: vec![
@@ -120,7 +173,17 @@ async fn escolher_variaveis(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     }
 }
 
-// Processa a requisição e gera o gráfico
+/// Endpoint para processar a requisição de geração de gráfico.
+///
+/// # Parâmetros
+///
+/// - `form`: Dados do formulário enviados via POST.
+/// - `hb`: Dados do template Handlebars.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com o gráfico gerado.
+/// - `HttpResponse::InternalServerError` se ocorrer um erro ao gerar o gráfico.
 #[post("/gerar_grafico")]
 async fn gerar_grafico(
     form: web::Form<GraficoRequest>,
@@ -175,7 +238,16 @@ async fn gerar_grafico(
     }
 }
 
-
+/// Endpoint para resetar o gráfico gerado anteriormente.
+///
+/// # Parâmetros
+///
+/// - `hb`: Dados do template Handlebars.
+///
+/// # Retornos
+///
+/// - `HttpResponse::Ok` com a página renderizada sem o gráfico.
+/// - `HttpResponse::InternalServerError` se ocorrer um erro ao renderizar o template.
 #[post("/reset")]
 async fn reset_grafico(hb: web::Data<Handlebars<'_>>) -> impl Responder {
     let context = EscolhaVariaveis {
@@ -200,6 +272,11 @@ async fn reset_grafico(hb: web::Data<Handlebars<'_>>) -> impl Responder {
 // ** ATUALIZAÇÃO NO SERVIDOR **
 // =======================
 
+/// Inicia o servidor frontend.
+///
+/// # Retornos
+///
+/// - `io::Result<()>`: Resultado da operação de inicialização do servidor.
 pub async fn start_frontend() -> io::Result<()> {
     let mut handlebars = Handlebars::new();
     let templates_path = env::current_dir().unwrap().join("templates");
