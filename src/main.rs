@@ -5,6 +5,9 @@ use plotly::{Plot, Scatter}; // Biblioteca para criar gráficos interativos
 
 mod front;
 
+/// Estrutura que representa uma entrada de log.
+///
+/// Contém campos como tempo, RPM, TPS, posição do acelerador, marcha, etc.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[allow(dead_code)]
 pub struct LogEntry {
@@ -36,8 +39,12 @@ pub struct LogEntry {
     pub tanque: f64,
 }
 
-
-// Função para ler os dados do arquivo 'dadosmemoria.json'
+/// Função para ler os dados do arquivo 'dadosmemoria.json'.
+///
+/// # Retornos
+///
+/// - `Ok(Vec<LogEntry>)`: Um vetor de `LogEntry` se a leitura for bem-sucedida.
+/// - `Err(Box<dyn Error>)`: Um erro se ocorrer um problema ao ler o arquivo.
 pub fn ler_dados_memoria() -> Result<Vec<LogEntry>, Box<dyn Error>> {
     let file_path = "dados/dadosmemoria.json";
     // Se o arquivo não existir ou estiver vazio, retorna um vetor vazio
@@ -46,7 +53,16 @@ pub fn ler_dados_memoria() -> Result<Vec<LogEntry>, Box<dyn Error>> {
     Ok(dados)
 }
 
-// Função para salvar os dados atualizados no arquivo 'dadosmemoria.json'
+/// Função para salvar os dados atualizados no arquivo 'dadosmemoria.json'.
+///
+/// # Parâmetros
+///
+/// - `dados`: Um vetor de `LogEntry` contendo os dados a serem salvos.
+///
+/// # Retornos
+///
+/// - `Ok(())`: Se os dados forem salvos com sucesso.
+/// - `Err(Box<dyn Error>)`: Se ocorrer um erro ao salvar os dados.
 pub fn salvar_dados_memoria(dados: &Vec<LogEntry>) -> Result<(), Box<dyn Error>> {
     let file_path = "dados/dadosmemoria.json";
     let conteudo = serde_json::to_string_pretty(dados)?;
@@ -54,7 +70,16 @@ pub fn salvar_dados_memoria(dados: &Vec<LogEntry>) -> Result<(), Box<dyn Error>>
     Ok(())
 }
 
-// Função para ler CSV e retornar um vetor de LogEntry
+/// Função para ler um arquivo CSV e retornar um vetor de `LogEntry`.
+///
+/// # Parâmetros
+///
+/// - `file_path`: Caminho do arquivo CSV.
+///
+/// # Retornos
+///
+/// - `Ok(Vec<LogEntry>)`: Um vetor de `LogEntry` se a leitura for bem-sucedida.
+/// - `Err(Box<dyn Error>)`: Um erro se ocorrer um problema ao ler o arquivo.
 fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     let mut rdr = ReaderBuilder::new().has_headers(true).from_path(file_path)?;
 
@@ -68,14 +93,32 @@ fn read_csv(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     Ok(data)
 }
 
-// Função para ler JSON e retornar um vetor de LogEntry
+/// Função para ler um arquivo JSON e retornar um vetor de `LogEntry`.
+///
+/// # Parâmetros
+///
+/// - `file_path`: Caminho do arquivo JSON.
+///
+/// # Retornos
+///
+/// - `Ok(Vec<LogEntry>)`: Um vetor de `LogEntry` se a leitura for bem-sucedida.
+/// - `Err(Box<dyn Error>)`: Um erro se ocorrer um problema ao ler o arquivo.
 fn read_json(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     let file_content = fs::read_to_string(file_path)?; // Lê o arquivo JSON como string
     let data: Vec<LogEntry> = serde_json::from_str(&file_content)?; // Converte JSON para struct
     Ok(data)
 }
 
-// Função para exibir opções e capturar entrada do usuário
+/// Função para exibir opções e capturar a escolha do usuário.
+///
+/// # Parâmetros
+///
+/// - `mensagem`: Mensagem a ser exibida ao usuário.
+/// - `opcoes`: Lista de opções disponíveis.
+///
+/// # Retornos
+///
+/// - `String`: A opção escolhida pelo usuário.
 fn escolher_variavel(mensagem: &str, opcoes: &[&str]) -> String {
     loop {
         println!("{}", mensagem);
@@ -96,7 +139,18 @@ fn escolher_variavel(mensagem: &str, opcoes: &[&str]) -> String {
     }
 }
 
-// Função para gerar gráfico baseado na escolha do usuário
+/// Função para gerar um gráfico personalizado com base nas escolhas do usuário.
+///
+/// # Parâmetros
+///
+/// - `data`: Um vetor de `LogEntry` contendo os dados.
+/// - `eixo_x`: Variável a ser usada no eixo X.
+/// - `eixo_y`: Variável a ser usada no eixo Y.
+///
+/// # Retornos
+///
+/// - `Ok(())`: Se o gráfico for gerado com sucesso.
+/// - `Err(Box<dyn Error>)`: Se ocorrer um erro ao gerar o gráfico.
 fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) -> Result<(), Box<dyn Error>> {
     let valores_x: Vec<f64> = match eixo_x {
         "TIME" => data.iter().map(|d| d.time).collect(),
@@ -146,8 +200,16 @@ fn gerar_grafico_personalizado(data: &[LogEntry], eixo_x: &str, eixo_y: &str) ->
     Ok(())
 }
 
-
-// Função para detectar a extensão do arquivo e chamar a leitura correta
+/// Função para detectar a extensão do arquivo e chamar a função de leitura correta.
+///
+/// # Parâmetros
+///
+/// - `file_path`: Caminho do arquivo.
+///
+/// # Retornos
+///
+/// - `Ok(Vec<LogEntry>)`: Um vetor de `LogEntry` se a leitura for bem-sucedida.
+/// - `Err(Box<dyn Error>)`: Um erro se o formato do arquivo não for suportado.
 fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     if file_path.ends_with(".csv") {
         println!("Detectado arquivo CSV.");
@@ -160,36 +222,8 @@ fn carregar_dados(file_path: &str) -> Result<Vec<LogEntry>, Box<dyn Error>> {
     }
 }
 
-// Função principal que executa o programa
-
+/// Função principal que executa o programa.
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     front::start_frontend().await
 }
-
-
-//fn main() -> Result<(), Box<dyn Error>> {
-//    let file_path = "dados/dados1.csv"; // Modifique para testar com um arquivo JSON
-//
-    // Detecta o tipo do arquivo e lê os dados
-//    let data = carregar_dados(file_path)?;
-//
-//    println!("Número total de linhas lidas: {}", data.len());
-//    if let Some(first_entry) = data.get(0) {
-//        println!("Primeira entrada: {:?}", first_entry);
-//    }
-//
-    // Permitir ao usuário escolher as variáveis do eixo X e Y
-//    let variaveis = [
-//        "TIME", "RPM", "TPS", "Posição do Acelerador", "Ponto de Ignição",
-//        "Temp. do Motor", "Temp. do Ar", "Pressão de Óleo", "Tensão da Bateria", "Pressão do Freio"
-//    ];
-//
-//    let eixo_x = escolher_variavel("Escolha a variável do eixo X:", &variaveis);
-//    let eixo_y = escolher_variavel("Escolha a variável do eixo Y:", &variaveis);
-
-    // Gerar o gráfico personalizado
-//    gerar_grafico_personalizado(&data, &eixo_x, &eixo_y)?;
-
-//    Ok(())
-//}
